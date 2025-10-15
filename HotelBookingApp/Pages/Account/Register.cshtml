@@ -1,0 +1,57 @@
+﻿@page
+@model HotelBookingApp.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = "_Layout";
+}
+
+<div class="container mt-5" style="max-width:400px;">
+    <h2 class="text-center mb-3">Create Account</h2>
+
+    <form id="registerForm" onsubmit="registerUser(event)">
+        <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input id="name" class="form-control" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input id="email" type="email" class="form-control" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input id="password" type="password" class="form-control" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Register</button>
+        <p class="mt-3 text-center">
+            Already have an account? <a asp-page="/Account/Login">Login</a>
+        </p>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        async function registerUser(e) {
+            e.preventDefault();
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            const response = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            if (response.ok) {
+                alert("Registration successful! You can now log in.");
+                window.location.href = "/Account/Login";
+            } else {
+                const data = await response.json();
+                alert("Error: " + (data?.message || "Registration failed"));
+            }
+        }
+    </script>
+}

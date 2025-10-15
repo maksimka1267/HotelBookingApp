@@ -1,0 +1,53 @@
+﻿@page
+@model HotelBookingApp.Pages.Admin.Hotels.IndexModel
+@{
+    ViewData["Title"] = "Hotels (Admin)";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2>Hotels Management</h2>
+    <a class="btn btn-primary my-3" asp-page="./Create">Add Hotel</a>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Description</th>
+                <th style="width:150px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="hotelsBody"></tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", loadHotels);
+
+        async function loadHotels() {
+            const response = await fetch("/api/hotels");
+            const hotels = await response.json();
+            const tbody = document.getElementById("hotelsBody");
+
+            tbody.innerHTML = hotels.map(h => `
+                <tr>
+                    <td>${h.name}</td>
+                    <td>${h.address || ''}</td>
+                    <td>${h.description || ''}</td>
+                    <td>
+                        <a class="btn btn-sm btn-warning" href="/Admin/Hotels/Edit?id=${h.id}">Edit</a>
+                        <button class="btn btn-sm btn-danger" onclick="deleteHotel('${h.id}')">Delete</button>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        async function deleteHotel(id) {
+            if (!confirm("Delete this hotel?")) return;
+            const res = await fetch(`/api/hotels/${id}`, { method: "DELETE" });
+            if (res.ok) loadHotels(); else alert("Error deleting hotel");
+        }
+    </script>
+}

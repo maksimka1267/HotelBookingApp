@@ -1,0 +1,99 @@
+﻿@page
+@model HotelBookingApp.Pages.IndexModel
+@{
+    ViewData["Title"] = "Hotels";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Available Hotels</h2>
+
+    <div id="hotelsContainer" class="row g-3"></div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    const hotelsContainer = document.getElementById("hotelsContainer");
+
+    const response = await fetch("/api/hotels");
+    if (!response.ok) {
+        hotelsContainer.innerHTML = "<p class='text-danger'>Failed to load hotels.</p>";
+        return;
+    }
+
+    const hotels = await response.json();
+    if (hotels.length === 0) {
+        hotelsContainer.innerHTML = "<p>No hotels available.</p>";
+        return;
+    }
+
+    hotels.forEach(hotel => {
+        const card = document.createElement("div");
+        card.classList.add("col-md-4");
+        card.innerHTML = `
+            <div class="card shadow-sm p-2">
+                <div class="card-body">
+                    <h5 class="card-title">${hotel.name}</h5>
+                    <p class="card-text">${hotel.description || "No description"}</p>
+                    <p class="text-muted">${hotel.address || ""}</p>
+                    <button class="btn btn-primary w-100" onclick="viewRooms('${hotel.id}')">View Rooms</button>
+                </div>
+            </div>
+        `;
+        hotelsContainer.appendChild(card);
+    });
+});
+
+async function viewRooms(hotelId) {
+    const response = await fetch(`/api/rooms?hotelId=${hotelId}`);
+    const rooms = await response.json();
+
+    const html = rooms.map(r => `
+        <div class="border p-2 rounded mb-2">
+            <h6>Room ${r.number}</h6>
+            <p>Price: <strong>${r.pricePerNight}</strong> /night, Capacity: ${r.capacity}</p>
+            <button class="btn btn-success" onclick="bookRoom('${r.id}')">Book</button>
+        </div>
+    `).join("");
+
+    const modal = document.createElement("div");
+    modal.classList.add("modal", "fade");
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content p-3">
+                <div class="modal-header">
+                    <h5>Rooms</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">${html}</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+}
+
+async function bookRoom(roomId) {
+    const checkIn = prompt("Enter check-in date (YYYY-MM-DD):");
+    const checkOut = prompt("Enter check-out date (YYYY-MM-DD):");
+    if (!checkIn || !checkOut) return;
+
+    const booking = { roomId, checkIn, checkOut };
+
+    const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(booking)
+    });
+
+    if (response.ok) {
+        alert("Room booked successfully!");
+    } else {
+        const text = await response.text();
+        alert("Error: " + text);
+    }
+}
+</script>
+}

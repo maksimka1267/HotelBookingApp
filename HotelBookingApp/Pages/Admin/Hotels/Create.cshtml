@@ -1,0 +1,50 @@
+﻿@page
+@model HotelBookingApp.Pages.Admin.Hotels.CreateModel
+@{
+    ViewData["Title"] = "Create Hotel";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2>Add New Hotel</h2>
+
+    <form id="hotelForm" onsubmit="createHotel(event)">
+        <div class="mb-3">
+            <label>Name</label>
+            <input id="name" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label>Address</label>
+            <input id="address" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label>Description</label>
+            <textarea id="description" class="form-control"></textarea>
+        </div>
+        <button class="btn btn-success">Save</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        async function createHotel(e) {
+            e.preventDefault();
+            const name = document.getElementById("name").value;
+            const address = document.getElementById("address").value;
+            const description = document.getElementById("description").value;
+
+            const response = await fetch("/api/hotels", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, address, description })
+            });
+
+            if (response.ok) {
+                alert("Hotel created!");
+                window.location.href = "/Admin/Hotels";
+            } else {
+                alert("Error creating hotel.");
+            }
+        }
+    </script>
+}

@@ -1,0 +1,83 @@
+﻿@page
+@model HotelBookingApp.Pages.Admin.Rooms.EditModel
+@{
+    ViewData["Title"] = "Edit Room";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2>Edit Room</h2>
+
+    <form id="roomForm" onsubmit="updateRoom(event)">
+        <input type="hidden" id="roomId" value="@Model.RoomId" />
+
+        <div class="mb-3">
+            <label>Hotel</label>
+            <select id="hotelSelect" class="form-select" required></select>
+        </div>
+        <div class="mb-3">
+            <label>Room Number</label>
+            <input id="number" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label>Price per Night</label>
+            <input id="price" type="number" class="form-control" required step="0.01" />
+        </div>
+        <div class="mb-3">
+            <label>Capacity</label>
+            <input id="capacity" type="number" class="form-control" required />
+        </div>
+
+        <button class="btn btn-primary">Update</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const id = "@Model.RoomId";
+
+            // загрузка отелей
+            const hotelsRes = await fetch("/api/hotels");
+            const hotels = await hotelsRes.json();
+            const select = document.getElementById("hotelSelect");
+            select.innerHTML = hotels.map(h => `<option value="${h.id}">${h.name}</option>`).join("");
+
+            // загрузка данных комнаты
+            const res = await fetch(`/api/rooms/${id}`);
+            if (!res.ok) {
+                alert("Room not found");
+                window.location.href = "/Admin/Rooms";
+                return;
+            }
+
+            const room = await res.json();
+            document.getElementById("number").value = room.number;
+            document.getElementById("price").value = room.pricePerNight;
+            document.getElementById("capacity").value = room.capacity;
+            document.getElementById("hotelSelect").value = room.hotelId;
+        });
+
+        async function updateRoom(e) {
+            e.preventDefault();
+            const id = "@Model.RoomId";
+            const number = document.getElementById("number").value;
+            const pricePerNight = parseFloat(document.getElementById("price").value);
+            const capacity = parseInt(document.getElementById("capacity").value);
+            const hotelId = document.getElementById("hotelSelect").value;
+
+            const response = await fetch(`/api/rooms/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, number, pricePerNight, capacity, hotelId })
+            });
+
+            if (response.ok) {
+                alert("Room updated!");
+                window.location.href = "/Admin/Rooms";
+            } else {
+                alert("Error updating room.");
+            }
+        }
+    </script>
+}

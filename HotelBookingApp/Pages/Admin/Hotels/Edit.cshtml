@@ -1,0 +1,64 @@
+﻿@page
+@model HotelBookingApp.Pages.Admin.Hotels.EditModel
+@{
+    ViewData["Title"] = "Edit Hotel";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2>Edit Hotel</h2>
+
+    <form id="hotelForm" onsubmit="updateHotel(event)">
+        <input type="hidden" id="hotelId" value="@Model.HotelId" />
+        <div class="mb-3">
+            <label>Name</label>
+            <input id="name" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label>Address</label>
+            <input id="address" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label>Description</label>
+            <textarea id="description" class="form-control"></textarea>
+        </div>
+        <button class="btn btn-primary">Update</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", loadHotel);
+
+        async function loadHotel() {
+            const id = "@Model.HotelId";
+            const res = await fetch(`/api/hotels/${id}`);
+            const h = await res.json();
+
+            document.getElementById("name").value = h.name;
+            document.getElementById("address").value = h.address || '';
+            document.getElementById("description").value = h.description || '';
+        }
+
+        async function updateHotel(e) {
+            e.preventDefault();
+            const id = "@Model.HotelId";
+            const name = document.getElementById("name").value;
+            const address = document.getElementById("address").value;
+            const description = document.getElementById("description").value;
+
+            const res = await fetch(`/api/hotels/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, name, address, description })
+            });
+
+            if (res.ok) {
+                alert("Hotel updated!");
+                window.location.href = "/Admin/Hotels";
+            } else {
+                alert("Error updating hotel");
+            }
+        }
+    </script>
+}

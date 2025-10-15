@@ -5,23 +5,21 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<ApplicationDbContext>(o =>
+    o.UseMySql(cs, ServerVersion.AutoDetect(cs)));
 
-// 🔹 Identity
-builder.Services.AddIdentity<Users, IdentityRole>(options =>
+builder.Services.AddIdentity<Users, IdentityRole>(o =>
 {
-    options.Password.RequireDigit = false;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequiredLength = 5;
+    o.Password.RequireDigit = false;
+    o.Password.RequireNonAlphanumeric = false;
+    o.Password.RequiredLength = 5;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
 builder.Services.AddControllers();
-builder.Services.AddRazorPages();
-
+builder.Services.AddRazorPages(); // либо .AddRazorPagesOptions(...) как в варианте B
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -42,8 +40,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapRazorPages();
-app.MapFallbackToPage("/Index");
 
+// сидер
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
