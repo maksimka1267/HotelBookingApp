@@ -1,0 +1,164 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using HotelBookingApp.Models
+@inject SignInManager<Users> SignInManager
+@inject UserManager<Users> UserManager
+
+@{
+    Users? me = null;
+    string displayName = "";
+
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        me = await UserManager.GetUserAsync(User);
+
+        if (!string.IsNullOrWhiteSpace(me?.Name))
+            displayName = me!.Name;
+        else if (!string.IsNullOrWhiteSpace(me?.Email))
+            displayName = me!.Email!;
+        else
+            displayName = UserManager.GetUserName(User);
+    }
+}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark hb-navbar" role="navigation" aria-label="Main navigation">
+    <div class="container">
+        <a class="navbar-brand fw-800" href="/Index" aria-label="HotelBooking Home">HotelBooking</a>
+
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center">
+                <li class="nav-item">
+                    <a class="nav-link" href="/Index">Home</a>
+                </li>
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link" href="/Bookings/Index">My Bookings</a>
+                    </li>
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown"
+                               role="button" data-bs-toggle="dropdown" data-bs-display="dynamic"
+                               aria-expanded="false" aria-haspopup="true">
+                                Admin Panel
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown" role="menu">
+                                <li><a class="dropdown-item" role="menuitem" href="/Admin/Hotels/Index">Manage Hotels</a></li>
+                                <li><a class="dropdown-item" role="menuitem" href="/Admin/Rooms/Index">Manage Rooms</a></li>
+                            </ul>
+                        </li>
+                    }
+                }
+            </ul>
+
+            <ul class="navbar-nav align-items-lg-center">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <li class="nav-item me-lg-2">
+                        <span class="navbar-text text-light me-2 d-inline-flex align-items-center gap-2">
+                            <span class="hb-user-dot" aria-hidden="true"></span>
+                            Hello, @displayName
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="btn btn-outline-light btn-sm" data-logout>
+                            Logout
+                        </button>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light btn-sm me-2" href="/Account/Login">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light btn-sm" href="/Account/Register">Register</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<script>
+    async function doLogout(e) {
+        if (e) e.preventDefault();
+
+        try {
+            const res = await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include"
+            });
+
+            if (res.ok) {
+                // SignInManager.SignOutAsync сам погасит auth-cookie
+                window.location.href = "/Account/Login";
+            } else {
+                const txt = await res.text();
+                window.showToast?.("Logout failed: " + (txt || "Unknown error"), "danger");
+            }
+        } catch (err) {
+            window.showToast?.("Network error: " + err, "danger");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Подсветка активного пункта
+        var path = location.pathname.toLowerCase();
+        document.querySelectorAll('.navbar .nav-link').forEach(function (a) {
+            var href = (a.getAttribute('href') || '').toLowerCase();
+            if (!href) return;
+            if (href === '/index' && (path === '/' || path === '/index')) {
+                a.classList.add('active');
+                return;
+            }
+            if (href !== '/' && path.startsWith(href)) a.classList.add('active');
+        });
+
+        // Collapse toggler (на случай если кто-то отключил авто-инициализацию)
+        if (window.bootstrap) {
+            document.querySelectorAll('.navbar .navbar-toggler').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    var target = el.getAttribute('data-bs-target');
+                    if (target) {
+                        var node = document.querySelector(target);
+                        if (node) bootstrap.Collapse.getOrCreateInstance(node).toggle();
+                    }
+                });
+            });
+        }
+
+        // Надёжный dropdown toggle поверх data-атрибутов
+        document.querySelectorAll('.nav-item.dropdown .dropdown-toggle').forEach(function (el) {
+            el.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.bootstrap) {
+                    bootstrap.Dropdown.getOrCreateInstance(el).toggle();
+                }
+            });
+        });
+
+        // Принудительное закрытие при клике вне (устраняет "залипание" при кастомных стилях)
+        document.addEventListener('click', function (evt) {
+            const isInsideDropdown = evt.target.closest('.nav-item.dropdown');
+            if (isInsideDropdown) return;
+            document.querySelectorAll('.nav-item.dropdown .dropdown-toggle').forEach(function (el) {
+                const dd = bootstrap.Dropdown.getInstance(el);
+                if (dd) dd.hide();
+            });
+        }, { capture: true });
+
+        // Logout
+        const logoutBtn = document.querySelector('[data-logout]');
+        if (logoutBtn) logoutBtn.addEventListener('click', doLogout);
+    });
+</script>

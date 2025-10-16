@@ -1,0 +1,64 @@
+﻿@page
+@model HotelBookingApp.Pages.Bookings.IndexModel
+@{
+    ViewData["Title"] = "My Bookings";
+    Layout = "_Layout";
+}
+
+<div class="page-title">
+    <h2>My Bookings</h2>
+</div>
+
+<div id="bookingsContainer" class="reveal">
+    <div class="card p-3"><div class="skeleton" style="height:24px"></div></div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", loadBookings);
+
+        async function loadBookings() {
+          const container = document.getElementById("bookingsContainer");
+          try {
+            const response = await fetch("/api/bookings/my", { credentials: "include" });
+            if (!response.ok) {
+              if (response.status === 401 || response.status === 403) {
+                container.innerHTML = `<div class='alert alert-warning'>You must be logged in to see your bookings.</div>`;
+                return;
+              }
+              container.innerHTML = `<div class='alert alert-danger'>Failed to load (status ${response.status}).</div>`;
+              return;
+            }
+
+            const bookings = await response.json();
+            if (!Array.isArray(bookings) || bookings.length === 0) {
+              container.innerHTML = `<div class="card p-3">No bookings yet.</div>`;
+              return;
+            }
+
+            container.innerHTML = bookings.map(b => `
+              <div class="card mb-2">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-semibold">${b.hotelName} — Room ${b.roomNumber}</div>
+                    <div class="small text-muted">${(b.checkIn || '').slice(0,10)} → ${(b.checkOut || '').slice(0,10)}</div>
+                    ${b.isConfirmed ? `<span class="badge-soft mt-2 d-inline-block">Confirmed</span>` : `<span class="badge-soft mt-2 d-inline-block">Pending</span>`}
+                  </div>
+                  <button class="btn btn-outline-danger btn-sm" onclick="cancelBooking('${b.id}')">Cancel</button>
+                </div>
+              </div>
+            `).join("");
+          } catch {
+            container.innerHTML = `<div class='alert alert-danger'>Network error.</div>`;
+          }
+        }
+
+        async function cancelBooking(id) {
+          if (!confirm("Cancel this booking?")) return;
+          const res = await fetch(`/api/bookings/${id}`, { method: "DELETE", credentials: "include" });
+          if (res.ok) { showToast("Booking canceled", "success"); loadBookings(); }
+          else if (res.status === 401 || res.status === 403) { alert("Please login to cancel."); location.href = "/Account/Login"; }
+          else { alert("Error canceling booking."); }
+        }
+    </script>
+}

@@ -1,0 +1,68 @@
+﻿@page
+@model HotelBookingApp.Pages.Admin.Rooms.IndexModel
+@{
+    ViewData["Title"] = "Rooms (Admin)";
+    Layout = "_Layout";
+}
+
+<div class="page-title">
+    <h2>Rooms Management</h2>
+    <a class="btn btn-primary" href="./Create">Add Room</a>
+</div>
+
+<div class="table-responsive reveal">
+    <table class="table table-bordered table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Hotel</th>
+                <th>Number</th>
+                <th>Price</th>
+                <th>Capacity</th>
+                <th style="width:150px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="roomsBody">
+            <tr><td colspan="5"><div class="skeleton" style="height:24px"></div></td></tr>
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", loadRooms);
+
+        function formatMoney(v) { return typeof v === "number" ? v.toFixed(2) : (v ?? ''); }
+
+        async function loadRooms() {
+          const tbody = document.getElementById("roomsBody");
+          try {
+            const response = await fetch("/api/rooms", { credentials: 'include' });
+            if (!response.ok) { tbody.innerHTML = `<tr><td colspan="5">Failed to load (status ${response.status})</td></tr>`; return; }
+            const rooms = await response.json();
+            if (!Array.isArray(rooms) || rooms.length === 0) { tbody.innerHTML = `<tr><td colspan="5">No rooms yet</td></tr>`; return; }
+
+            tbody.innerHTML = rooms.map(r => `
+              <tr>
+                <td>${r.hotel?.name ?? r.hotelName ?? ''}</td>
+                <td>${r.number ?? ''}</td>
+                <td>${formatMoney(r.pricePerNight)}</td>
+                <td>${r.capacity ?? ''}</td>
+                <td>
+                  <a class="btn btn-sm btn-warning" href="/Admin/Rooms/Edit?id=${r.id}">Edit</a>
+                  <button class="btn btn-sm btn-danger" onclick="deleteRoom('${r.id}')">Delete</button>
+                </td>
+              </tr>
+            `).join("");
+          } catch {
+            tbody.innerHTML = `<tr><td colspan="5">Network error</td></tr>`;
+          }
+        }
+
+        async function deleteRoom(id) {
+          if (!confirm("Delete this room?")) return;
+          const res = await fetch(`/api/rooms/${id}`, { method: "DELETE", credentials: 'include' });
+          if (res.ok) { showToast("Room deleted", "success"); loadRooms(); }
+          else alert(`Error deleting room (status ${res.status})`);
+        }
+    </script>
+}

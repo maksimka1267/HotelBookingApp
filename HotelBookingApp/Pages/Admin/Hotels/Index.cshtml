@@ -1,0 +1,69 @@
+﻿@page
+@model HotelBookingApp.Pages.Admin.Hotels.IndexModel
+@{
+    ViewData["Title"] = "Hotels (Admin)";
+    Layout = "_Layout";
+}
+
+<div class="page-title">
+    <h2>Hotels Management</h2>
+    <a class="btn btn-primary" href="/Admin/Hotels/Create">Add Hotel</a>
+</div>
+
+<div class="table-responsive reveal">
+    <table class="table table-bordered table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Description</th>
+                <th style="width:150px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="hotelsBody">
+            <tr><td colspan="4"><div class="skeleton" style="height:24px"></div></td></tr>
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", loadHotels);
+
+        async function loadHotels() {
+          const tbody = document.getElementById("hotelsBody");
+          try {
+            const response = await fetch("/api/hotels", { credentials: 'include' });
+            if (!response.ok) {
+              tbody.innerHTML = `<tr><td colspan="4">Failed to load (status ${response.status})</td></tr>`;
+              return;
+            }
+            const hotels = await response.json();
+            if (!hotels.length) {
+              tbody.innerHTML = `<tr><td colspan="4">No hotels</td></tr>`;
+              return;
+            }
+            tbody.innerHTML = hotels.map(h => `
+              <tr>
+                <td>${h.name}</td>
+                <td>${h.address ?? ''}</td>
+                <td>${h.description ?? ''}</td>
+                <td>
+                  <a class="btn btn-sm btn-warning" href="/Admin/Hotels/Edit?id=${h.id}">Edit</a>
+                  <button class="btn btn-sm btn-danger" onclick="deleteHotel('${h.id}')">Delete</button>
+                </td>
+              </tr>
+            `).join("");
+          } catch {
+            tbody.innerHTML = `<tr><td colspan="4">Network error</td></tr>`;
+          }
+        }
+
+        async function deleteHotel(id) {
+          if (!confirm("Delete this hotel?")) return;
+          const res = await fetch(`/api/hotels/${id}`, { method: "DELETE", credentials: 'include' });
+          if (res.ok) { showToast("Hotel deleted", "success"); loadHotels(); }
+          else alert("Error deleting hotel");
+        }
+    </script>
+}
