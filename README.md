@@ -37,35 +37,34 @@
 HotelBookingApp/
 │
 ├── Controllers/
-│ ├── AuthController.cs # API для реєстрації, логіну та логауту
-│ ├── HotelsController.cs # API для керування готелями (Admin)
-│ ├── RoomsController.cs # API для номерів (Admin)
-│ └── BookingsController.cs # API для бронювань
+│   ├── AuthController.cs         # API для реєстрації, логіну та логауту
+│   ├── HotelsController.cs       # API для керування готелями (Admin)
+│   ├── RoomsController.cs        # API для номерів (Admin)
+│   └── BookingsController.cs     # API для бронювань
 │
 ├── Models/
-│ ├── Users.cs # Модель користувача (IdentityUser + Name)
-│ ├── Hotel.cs # Готель
-│ ├── Room.cs # Номер у готелі
-│ └── Booking.cs # Бронювання
+│   ├── Users.cs                  # Модель користувача (IdentityUser + Name)
+│   ├── Hotel.cs                  # Готель
+│   ├── Room.cs                   # Номер у готелі
+│   └── Booking.cs                # Бронювання
 │
 ├── Pages/
-│ ├── Index.cshtml # Головна сторінка
-│ ├── Account/ # Сторінки реєстрації, логіну, виходу
-│ ├── Bookings/ # Перегляд бронювань користувача
-│ └── Admin/ # Адмін-панель (готелі, номери)
+│   ├── Index.cshtml              # Головна сторінка
+│   ├── Account/                  # Сторінки реєстрації, логіну, виходу
+│   ├── Bookings/                 # Перегляд бронювань користувача
+│   └── Admin/                    # Адмін-панель (готелі, номери)
 │
 ├── Data/
-│ └── ApplicationDbContext.cs # Контекст бази даних (EF Core)
+│   └── ApplicationDbContext.cs   # Контекст бази даних (EF Core)
 │
 ├── wwwroot/
-│ ├── css/site.css # Стилі інтерфейсу
-│ ├── js/site.js # Основний JS (анімації, toast-и)
-│ └── favicon.ico
+│   ├── css/site.css              # Стилі інтерфейсу
+│   ├── js/site.js                # Основний JS (анімації, toast-и)
+│   └── favicon.ico
 │
-├── Program.cs # Налаштування застосунку, Identity, DI, Swagger
-└── README.md # Поточний файл опису
+├── Program.cs                    # Налаштування застосунку, Identity, DI, Swagger
+└── README.md                     # Поточний файл опису
 
----
 
 ## 🚀 Функціональність
 
