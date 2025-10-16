@@ -1,28 +1,38 @@
-﻿@page
+﻿@page "{id:guid?}"
 @model HotelBookingApp.Pages.Admin.Hotels.EditModel
 @{
     ViewData["Title"] = "Edit Hotel";
     Layout = "_Layout";
 }
 
-<div class="container mt-4">
+<div class="page-title">
     <h2>Edit Hotel</h2>
+    <a href="/Admin/Hotels" class="btn btn-secondary">Back</a>
+</div>
 
+<div class="card p-4">
     <form id="hotelForm" onsubmit="updateHotel(event)">
         <input type="hidden" id="hotelId" value="@Model.HotelId" />
+
         <div class="mb-3">
-            <label>Name</label>
+            <label class="form-label">Name</label>
             <input id="name" class="form-control" required />
         </div>
+
         <div class="mb-3">
-            <label>Address</label>
+            <label class="form-label">Address</label>
             <input id="address" class="form-control" />
         </div>
+
         <div class="mb-3">
-            <label>Description</label>
-            <textarea id="description" class="form-control"></textarea>
+            <label class="form-label">Description</label>
+            <textarea id="description" class="form-control" rows="4"></textarea>
         </div>
-        <button class="btn btn-primary">Update</button>
+
+        <div class="d-flex gap-2">
+            <button id="btnUpdate" class="btn btn-primary">Update</button>
+            <a href="/Admin/Hotels" class="btn btn-outline-secondary">Cancel</a>
+        </div>
     </form>
 </div>
 
@@ -31,34 +41,44 @@
         document.addEventListener("DOMContentLoaded", loadHotel);
 
         async function loadHotel() {
-            const id = "@Model.HotelId";
-            const res = await fetch(`/api/hotels/${id}`);
+          const id = document.getElementById("hotelId").value;
+          try {
+            const res = await fetch(`/api/hotels/${id}`, { credentials: 'include' });
+            if (!res.ok) { showToast('Hotel not found', 'danger'); return; }
             const h = await res.json();
-
-            document.getElementById("name").value = h.name;
-            document.getElementById("address").value = h.address || '';
-            document.getElementById("description").value = h.description || '';
+            document.getElementById("name").value = h.name ?? '';
+            document.getElementById("address").value = h.address ?? '';
+            document.getElementById("description").value = h.description ?? '';
+          } catch { showToast('Failed to load hotel', 'danger'); }
         }
 
         async function updateHotel(e) {
-            e.preventDefault();
-            const id = "@Model.HotelId";
-            const name = document.getElementById("name").value;
-            const address = document.getElementById("address").value;
-            const description = document.getElementById("description").value;
+          e.preventDefault();
+          const btn = document.getElementById('btnUpdate');
+          btn.disabled = true;
 
+          const id = document.getElementById("hotelId").value;
+          const payload = {
+            id,
+            name: document.getElementById("name").value.trim(),
+            address: document.getElementById("address").value.trim(),
+            description: document.getElementById("description").value.trim()
+          };
+
+          try {
             const res = await fetch(`/api/hotels/${id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, name, address, description })
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              credentials: 'include',
+              body: JSON.stringify(payload)
             });
-
-            if (res.ok) {
-                alert("Hotel updated!");
-                window.location.href = "/Admin/Hotels";
-            } else {
-                alert("Error updating hotel");
+            if (res.ok) { showToast('Hotel updated', 'success'); setTimeout(()=>location.href="/Admin/Hotels", 500); }
+            else {
+              const text = await res.text().catch(()=> '');
+              showToast("Error updating hotel" + (text ? `: ${text}` : ''), 'danger');
             }
+          } catch { showToast("Network error", 'danger'); }
+          finally { btn.disabled = false; }
         }
     </script>
 }

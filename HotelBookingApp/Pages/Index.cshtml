@@ -5,95 +5,111 @@
     Layout = "_Layout";
 }
 
-<div class="container mt-4">
-    <h2 class="text-center mb-4">Available Hotels</h2>
+<div class="page-title">
+    <h2>Available Hotels</h2>
+</div>
 
-    <div id="hotelsContainer" class="row g-3"></div>
+<div id="hotelsContainer" class="row g-3 reveal">
+    <div class="col-12"><div class="skeleton" style="height:120px"></div></div>
 </div>
 
 @section Scripts {
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-    const hotelsContainer = document.getElementById("hotelsContainer");
+    <script>
+        document.addEventListener("DOMContentLoaded", loadHotels);
 
-    const response = await fetch("/api/hotels");
-    if (!response.ok) {
-        hotelsContainer.innerHTML = "<p class='text-danger'>Failed to load hotels.</p>";
-        return;
-    }
-
-    const hotels = await response.json();
-    if (hotels.length === 0) {
-        hotelsContainer.innerHTML = "<p>No hotels available.</p>";
-        return;
-    }
-
-    hotels.forEach(hotel => {
-        const card = document.createElement("div");
-        card.classList.add("col-md-4");
-        card.innerHTML = `
-            <div class="card shadow-sm p-2">
-                <div class="card-body">
-                    <h5 class="card-title">${hotel.name}</h5>
-                    <p class="card-text">${hotel.description || "No description"}</p>
-                    <p class="text-muted">${hotel.address || ""}</p>
-                    <button class="btn btn-primary w-100" onclick="viewRooms('${hotel.id}')">View Rooms</button>
+        async function loadHotels() {
+          const box = document.getElementById("hotelsContainer");
+          box.innerHTML = `<div class="col-12"><div class="skeleton" style="height:120px"></div></div>`;
+          try {
+            const res = await fetch("/api/hotels", { credentials: "include" });
+            if (!res.ok) {
+              box.innerHTML = `<div class="col-12"><div class='alert alert-danger'>Failed to load hotels (status ${res.status}).</div></div>`;
+              return;
+            }
+            const hotels = await res.json();
+            if (!hotels?.length) {
+              box.innerHTML = `<div class="col-12"><div class='card p-3'>No hotels available.</div></div>`;
+              return;
+            }
+            box.innerHTML = hotels.map(h => `
+              <div class="col-md-4">
+                <div class="card h-100">
+                  <div class="card-body d-flex flex-column">
+                    <h5 class="card-title mb-2">${h.name}</h5>
+                    <p class="card-text flex-grow-1">${h.description ?? "No description"}</p>
+                    <div class="text-muted small mb-3">${h.address ?? ""}</div>
+                    <button class="btn btn-primary w-100 mt-auto" onclick="viewRooms('${h.id}', '${(h.name ?? '').replace(/'/g, "\\'")}')">
+                      View Rooms
+                    </button>
+                  </div>
                 </div>
+              </div>
+            `).join("");
+          } catch {
+            box.innerHTML = `<div class="col-12"><div class='alert alert-danger'>Network error.</div></div>`;
+          }
+        }
+
+        async function viewRooms(hotelId, hotelName) {
+          const res = await fetch(`/api/rooms?hotelId=${hotelId}`, { credentials: "include" });
+          if (!res.ok) { alert("Failed to load rooms"); return; }
+          const rooms = await res.json();
+          const body = rooms.map(r => `
+            <div class="border rounded p-3 mb-2">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h6 class="mb-1">Room ${r.number}</h6>
+                  <div class="small text-muted">Price: <strong>${r.pricePerNight}</strong> /night • Capacity: ${r.capacity}</div>
+                </div>
+              </div>
+              <div class="row g-2 mt-2">
+                <div class="col"><input type="date" class="form-control" id="ci_${r.id}"></div>
+                <div class="col"><input type="date" class="form-control" id="co_${r.id}"></div>
+                <div class="col-auto">
+                  <button class="btn btn-success" onclick="bookRoom('${r.id}')">Book</button>
+                </div>
+              </div>
             </div>
-        `;
-        hotelsContainer.appendChild(card);
-    });
-});
+          `).join("") || "<p>No rooms.</p>";
 
-async function viewRooms(hotelId) {
-    const response = await fetch(`/api/rooms?hotelId=${hotelId}`);
-    const rooms = await response.json();
-
-    const html = rooms.map(r => `
-        <div class="border p-2 rounded mb-2">
-            <h6>Room ${r.number}</h6>
-            <p>Price: <strong>${r.pricePerNight}</strong> /night, Capacity: ${r.capacity}</p>
-            <button class="btn btn-success" onclick="bookRoom('${r.id}')">Book</button>
-        </div>
-    `).join("");
-
-    const modal = document.createElement("div");
-    modal.classList.add("modal", "fade");
-    modal.innerHTML = `
-        <div class="modal-dialog">
-            <div class="modal-content p-3">
+          const el = document.createElement("div");
+          el.className = "modal fade";
+          el.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content p-2">
                 <div class="modal-header">
-                    <h5>Rooms</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                  <h5 class="modal-title">Rooms — ${hotelName}</h5>
+                  <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">${html}</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    const bsModal = new bootstrap.Modal(modal);
-    bsModal.show();
-}
+                <div class="modal-body">${body}</div>
+              </div>
+            </div>`;
+          document.body.appendChild(el);
+          new bootstrap.Modal(el).show();
+          el.addEventListener("hidden.bs.modal", () => el.remove(), { once: true });
+        }
 
-async function bookRoom(roomId) {
-    const checkIn = prompt("Enter check-in date (YYYY-MM-DD):");
-    const checkOut = prompt("Enter check-out date (YYYY-MM-DD):");
-    if (!checkIn || !checkOut) return;
+        async function bookRoom(roomId) {
+          const ci = document.getElementById(`ci_${roomId}`)?.value;
+          const co = document.getElementById(`co_${roomId}`)?.value;
+          if (!ci || !co) { alert("Please select dates"); return; }
 
-    const booking = { roomId, checkIn, checkOut };
+          const res = await fetch("/api/bookings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ roomId: roomId, checkIn: ci, checkOut: co })
+          });
 
-    const response = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(booking)
-    });
-
-    if (response.ok) {
-        alert("Room booked successfully!");
-    } else {
-        const text = await response.text();
-        alert("Error: " + text);
-    }
-}
-</script>
+          if (res.ok) {
+            showToast("Room booked successfully!", "success");
+          } else if (res.status === 401 || res.status === 403) {
+            alert("Please login as Client.");
+            location.href = "/Account/Login";
+          } else {
+            const text = await res.text().catch(() => "");
+            alert("Error: " + (text || res.status));
+          }
+        }
+    </script>
 }

@@ -15,7 +15,7 @@ namespace HotelBookingApp.Data
 
             await context.Database.MigrateAsync();
 
-            string[] roles = { "Admin", "Client" };
+                string[] roles = { "Admin", "Client" };
             foreach (var role in roles)
             {
                 if (!await roleManager.RoleExistsAsync(role))

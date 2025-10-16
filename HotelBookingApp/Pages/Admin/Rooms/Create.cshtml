@@ -5,27 +5,36 @@
     Layout = "_Layout";
 }
 
-<div class="container mt-4">
+<div class="page-title">
     <h2>Add New Room</h2>
+    <a href="/Admin/Rooms" class="btn btn-secondary">Back</a>
+</div>
 
+<div class="card p-4">
     <form id="roomForm" onsubmit="createRoom(event)">
-        <div class="mb-3">
-            <label>Hotel</label>
-            <select id="hotelSelect" class="form-select" required></select>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Hotel</label>
+                <select id="hotelSelect" class="form-select" required></select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Room Number</label>
+                <input id="number" class="form-control" required />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Price per Night</label>
+                <input id="price" type="number" class="form-control" required step="0.01" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Capacity</label>
+                <input id="capacity" type="number" class="form-control" required />
+            </div>
         </div>
-        <div class="mb-3">
-            <label>Room Number</label>
-            <input id="number" class="form-control" required />
+
+        <div class="d-flex gap-2 mt-4">
+            <button id="btnSave" class="btn btn-success">Save</button>
+            <a href="/Admin/Rooms" class="btn btn-outline-secondary">Cancel</a>
         </div>
-        <div class="mb-3">
-            <label>Price per Night</label>
-            <input id="price" type="number" class="form-control" required step="0.01" />
-        </div>
-        <div class="mb-3">
-            <label>Capacity</label>
-            <input id="capacity" type="number" class="form-control" required />
-        </div>
-        <button class="btn btn-success">Save</button>
     </form>
 </div>
 
@@ -34,32 +43,51 @@
         document.addEventListener("DOMContentLoaded", loadHotels);
 
         async function loadHotels() {
-            const res = await fetch("/api/hotels");
+          try {
+            const res = await fetch("/api/hotels", { credentials: 'include' });
+            if (!res.ok) {
+              if (res.status === 401 || res.status === 403) {
+                showToast("Unauthorized. Please login as Admin.", "danger");
+                location.href = "/Account/Login";
+                return;
+              }
+              throw new Error("Failed to load hotels");
+            }
             const hotels = await res.json();
             const select = document.getElementById("hotelSelect");
             select.innerHTML = hotels.map(h => `<option value="${h.id}">${h.name}</option>`).join("");
+          } catch (e) { showToast(e.message || "Failed to load hotels", "danger"); }
         }
 
         async function createRoom(e) {
-            e.preventDefault();
+          e.preventDefault();
+          const btn = document.getElementById('btnSave'); btn.disabled = true;
 
-            const hotelId = document.getElementById("hotelSelect").value;
-            const number = document.getElementById("number").value;
-            const pricePerNight = parseFloat(document.getElementById("price").value);
-            const capacity = parseInt(document.getElementById("capacity").value);
+          const payload = {
+            hotelId: document.getElementById("hotelSelect").value,
+            number: document.getElementById("number").value.trim(),
+            pricePerNight: parseFloat(document.getElementById("price").value),
+            capacity: parseInt(document.getElementById("capacity").value)
+          };
 
+          try {
             const response = await fetch("/api/rooms", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hotelId, number, pricePerNight, capacity })
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: 'include',
+              body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
-                alert("Room created!");
-                window.location.href = "/Admin/Rooms";
+            if (response.ok) { showToast("Room created!", "success"); setTimeout(()=>location.href="/Admin/Rooms", 500); }
+            else if (response.status === 401 || response.status === 403) {
+              showToast("Unauthorized. Please login as Admin.", "danger");
+              location.href = "/Account/Login";
             } else {
-                alert("Error creating room.");
+              const txt = await response.text().catch(()=> "");
+              showToast("Error creating room." + (txt ? ` ${txt}` : ""), "danger");
             }
+          } catch { showToast("Network error.", "danger"); }
+          finally { btn.disabled = false; }
         }
     </script>
 }

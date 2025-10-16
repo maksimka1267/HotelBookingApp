@@ -17,6 +17,11 @@ builder.Services.AddIdentity<Users, IdentityRole>(o =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login"; // если не авторизован
+    options.AccessDeniedPath = "/Account/Login"; // если нет доступа
+});
 
 builder.Services.AddControllers();
 builder.Services.AddRazorPages(); // либо .AddRazorPagesOptions(...) как в варианте B

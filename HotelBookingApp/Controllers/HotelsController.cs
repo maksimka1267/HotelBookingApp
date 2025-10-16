@@ -11,7 +11,7 @@ namespace HotelBookingApp.Controllers
     public class HotelsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-
+        public record HotelUpdateDto(Guid Id, string Name, string? Address, string? Description);
         public HotelsController(ApplicationDbContext context)
         {
             _context = context;
@@ -23,10 +23,14 @@ namespace HotelBookingApp.Controllers
         public async Task<IActionResult> GetAll()
         {
             var hotels = await _context.Hotels
-                .Include(h => h.Rooms)
+                .AsNoTracking()
+                .OrderBy(h => h.Name)
+                .Select(h => new { id = h.Id, name = h.Name })
                 .ToListAsync();
+
             return Ok(hotels);
         }
+
 
         // GET: api/hotels/{id}
         [HttpGet("{id}")]
@@ -55,12 +59,28 @@ namespace HotelBookingApp.Controllers
         // PUT: api/hotels/{id}
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] Hotel hotel)
+        public async Task<IActionResult> Update(Guid id, [FromBody] HotelUpdateDto dto)
         {
-            if (id != hotel.Id) return BadRequest();
+            if (id != dto.Id) return BadRequest("Route id and body id mismatch.");
 
-            _context.Entry(hotel).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            var entity = await _context.Hotels.FirstOrDefaultAsync(h => h.Id == id);
+            if (entity == null) return NotFound();
+
+            // ТОЛЬКО разрешённые поля
+            entity.Name = dto.Name;
+            entity.Address = dto.Address;
+            entity.Description = dto.Description;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // на случай, если включишь конкуррентность
+                return Conflict("Concurrency conflict.");
+            }
+
             return NoContent();
         }
 

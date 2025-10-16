@@ -5,53 +5,66 @@
     Layout = "_Layout";
 }
 
-<div class="container mt-5" style="max-width:400px;">
-    <h2 class="text-center mb-3">Create Account</h2>
+<div class="d-flex justify-content-center">
+    <div class="card p-4" style="max-width:420px; width:100%;">
+        <h2 class="text-center mb-3">Create Account</h2>
 
-    <form id="registerForm" onsubmit="registerUser(event)">
-        <div class="mb-3">
-            <label class="form-label">Full Name</label>
-            <input id="name" class="form-control" required />
-        </div>
+        <div id="errorBox" class="alert alert-danger d-none"></div>
 
-        <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input id="email" type="email" class="form-control" required />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input id="password" type="password" class="form-control" required />
-        </div>
-
-        <button type="submit" class="btn btn-primary w-100">Register</button>
-        <p class="mt-3 text-center">
-            Already have an account? <a asp-page="/Account/Login">Login</a>
-        </p>
-    </form>
+        <form id="registerForm" onsubmit="registerUser(event)" class="reveal in">
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input id="name" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input id="email" type="email" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input id="password" type="password" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Register</button>
+            <p class="mt-3 text-center small mb-0">
+                Already have an account? <a href="/Account/Login">Login</a>
+            </p>
+        </form>
+    </div>
 </div>
 
 @section Scripts {
     <script>
         async function registerUser(e) {
-            e.preventDefault();
-            const name = document.getElementById("name").value;
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
+          e.preventDefault();
+          const errorBox = document.getElementById("errorBox");
+          errorBox.classList.add("d-none"); errorBox.innerHTML = "";
 
-            const response = await fetch("/api/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, email, password })
-            });
+          const name = document.getElementById("name").value;
+          const email = document.getElementById("email").value;
+          const password = document.getElementById("password").value;
 
-            if (response.ok) {
-                alert("Registration successful! You can now log in.");
-                window.location.href = "/Account/Login";
-            } else {
-                const data = await response.json();
-                alert("Error: " + (data?.message || "Registration failed"));
-            }
+          const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, password })
+          });
+
+          if (response.ok) {
+            showToast("Registration successful!", "success");
+            setTimeout(() => window.location.href = "/Account/Login", 600);
+            return;
+          }
+
+          let message = "Registration failed.";
+          try {
+            const data = await response.json();
+            if (Array.isArray(data)) message = data.map(e => e.description || e.code).join("<br>");
+            else if (data.message) message = data.message;
+            else message = JSON.stringify(data);
+          } catch { message = await response.text(); }
+
+          errorBox.innerHTML = message;
+          errorBox.classList.remove("d-none");
         }
     </script>
 }

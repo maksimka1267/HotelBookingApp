@@ -66,6 +66,7 @@ namespace HotelBookingApp.Controllers
 
         // POST: api/auth/logout
         [HttpPost("logout")]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();

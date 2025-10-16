@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace HotelBookingApp.Pages
+namespace HotelBookingApp.Pages.Shared
 {
-    [Authorize]
-    public class IndexModel : PageModel
+    public class _HeaderModel : PageModel
     {
         public void OnGet()
         {

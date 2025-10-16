@@ -5,46 +5,59 @@
     Layout = "_Layout";
 }
 
-<div class="container mt-4">
+<div class="page-title">
     <h2>Add New Hotel</h2>
+    <a href="/Admin/Hotels" class="btn btn-secondary">Back</a>
+</div>
 
+<div class="card p-4">
     <form id="hotelForm" onsubmit="createHotel(event)">
         <div class="mb-3">
-            <label>Name</label>
+            <label class="form-label">Name</label>
             <input id="name" class="form-control" required />
         </div>
         <div class="mb-3">
-            <label>Address</label>
+            <label class="form-label">Address</label>
             <input id="address" class="form-control" />
         </div>
         <div class="mb-3">
-            <label>Description</label>
-            <textarea id="description" class="form-control"></textarea>
+            <label class="form-label">Description</label>
+            <textarea id="description" class="form-control" rows="4"></textarea>
         </div>
-        <button class="btn btn-success">Save</button>
+
+        <div class="d-flex gap-2">
+            <button id="btnSave" class="btn btn-success">Save</button>
+            <a href="/Admin/Hotels" class="btn btn-outline-secondary">Cancel</a>
+        </div>
     </form>
 </div>
 
 @section Scripts {
     <script>
         async function createHotel(e) {
-            e.preventDefault();
-            const name = document.getElementById("name").value;
-            const address = document.getElementById("address").value;
-            const description = document.getElementById("description").value;
+          e.preventDefault();
+          const btn = document.getElementById('btnSave'); btn.disabled = true;
 
-            const response = await fetch("/api/hotels", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, address, description })
+          const payload = {
+            name: document.getElementById("name").value.trim(),
+            address: document.getElementById("address").value.trim(),
+            description: document.getElementById("description").value.trim()
+          };
+
+          try {
+            const res = await fetch("/api/hotels", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: 'include',
+              body: JSON.stringify(payload)
             });
-
-            if (response.ok) {
-                alert("Hotel created!");
-                window.location.href = "/Admin/Hotels";
-            } else {
-                alert("Error creating hotel.");
+            if (res.ok) { showToast("Hotel created!", "success"); setTimeout(()=>location.href="/Admin/Hotels", 500); }
+            else {
+              const t = await res.text().catch(()=> "");
+              showToast("Error creating hotel" + (t?`: ${t}`:""), "danger");
             }
+          } catch { showToast("Network error", "danger"); }
+          finally { btn.disabled = false; }
         }
     </script>
 }

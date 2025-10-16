@@ -5,11 +5,13 @@
     Layout = "_Layout";
 }
 
-<div class="container mt-4">
+<div class="page-title">
     <h2>Hotels Management</h2>
-    <a class="btn btn-primary my-3" asp-page="./Create">Add Hotel</a>
+    <a class="btn btn-primary" href="/Admin/Hotels/Create">Add Hotel</a>
+</div>
 
-    <table class="table table-bordered">
+<div class="table-responsive reveal">
+    <table class="table table-bordered table-hover mb-0">
         <thead>
             <tr>
                 <th>Name</th>
@@ -18,7 +20,9 @@
                 <th style="width:150px;">Actions</th>
             </tr>
         </thead>
-        <tbody id="hotelsBody"></tbody>
+        <tbody id="hotelsBody">
+            <tr><td colspan="4"><div class="skeleton" style="height:24px"></div></td></tr>
+        </tbody>
     </table>
 </div>
 
@@ -27,27 +31,39 @@
         document.addEventListener("DOMContentLoaded", loadHotels);
 
         async function loadHotels() {
-            const response = await fetch("/api/hotels");
+          const tbody = document.getElementById("hotelsBody");
+          try {
+            const response = await fetch("/api/hotels", { credentials: 'include' });
+            if (!response.ok) {
+              tbody.innerHTML = `<tr><td colspan="4">Failed to load (status ${response.status})</td></tr>`;
+              return;
+            }
             const hotels = await response.json();
-            const tbody = document.getElementById("hotelsBody");
-
+            if (!hotels.length) {
+              tbody.innerHTML = `<tr><td colspan="4">No hotels</td></tr>`;
+              return;
+            }
             tbody.innerHTML = hotels.map(h => `
-                <tr>
-                    <td>${h.name}</td>
-                    <td>${h.address || ''}</td>
-                    <td>${h.description || ''}</td>
-                    <td>
-                        <a class="btn btn-sm btn-warning" href="/Admin/Hotels/Edit?id=${h.id}">Edit</a>
-                        <button class="btn btn-sm btn-danger" onclick="deleteHotel('${h.id}')">Delete</button>
-                    </td>
-                </tr>
+              <tr>
+                <td>${h.name}</td>
+                <td>${h.address ?? ''}</td>
+                <td>${h.description ?? ''}</td>
+                <td>
+                  <a class="btn btn-sm btn-warning" href="/Admin/Hotels/Edit?id=${h.id}">Edit</a>
+                  <button class="btn btn-sm btn-danger" onclick="deleteHotel('${h.id}')">Delete</button>
+                </td>
+              </tr>
             `).join("");
+          } catch {
+            tbody.innerHTML = `<tr><td colspan="4">Network error</td></tr>`;
+          }
         }
 
         async function deleteHotel(id) {
-            if (!confirm("Delete this hotel?")) return;
-            const res = await fetch(`/api/hotels/${id}`, { method: "DELETE" });
-            if (res.ok) loadHotels(); else alert("Error deleting hotel");
+          if (!confirm("Delete this hotel?")) return;
+          const res = await fetch(`/api/hotels/${id}`, { method: "DELETE", credentials: 'include' });
+          if (res.ok) { showToast("Hotel deleted", "success"); loadHotels(); }
+          else alert("Error deleting hotel");
         }
     </script>
 }
